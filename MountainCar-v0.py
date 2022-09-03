@@ -1,5 +1,5 @@
 import gym
-env = gym.make("MountainCar-v0",new_step_api=True)
+env = gym.make("MountainCar-v0",new_step_api=True, render_mode="human")
 
 print("Action:\t\t\t",env.action_space)
 print("Observation:\t",env.observation_space)
