@@ -189,7 +189,7 @@ class Agent:
                     self.eps_min = value
                 elif item == "eps_dec":
                     self.eps_dec = value
-                elif item == "lr"
+                elif item == "lr":
                     self.lr = value
                 elif item == "action_space":
                     self.action_space = value
