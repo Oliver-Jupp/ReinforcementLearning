@@ -123,7 +123,7 @@ class Agent:
 
         T.save(self.Q_eval, os.path.join(folderName, "model.pt"))
 
-        # This may be a very hacky-way to do this, but i find it the easiest... so
+        # This may be a very hacky-way to do this, but I find it the easiest... so
         # The idea is that we use the f"{self.variable=}" to get the return name: "self.variable=value"
         # then we use .split to split the string between the . and the = to get the variable name
         listOfItemsToSave = [[f"{self.gamma=}".split(".")[1].split("=")[0], self.gamma],
