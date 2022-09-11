@@ -6,7 +6,9 @@ import pickle
 
 
 class Agent:
-    def __init__(self, gamma, epsilon, lr, input_dims, batch_size, n_actions, max_mem_size=100000, eps_end=0.01,
+
+    # These are default values, don't take these as final
+    def __init__(self, gamma=0.99, epsilon=1.0, lr=0.001, input_dims=[8], batch_size=64, n_actions=4, max_mem_size=100000, eps_end=0.01,
                  eps_dec=5e-4):
         self.gamma = gamma
         self.epsilon = epsilon
@@ -17,6 +19,8 @@ class Agent:
         self.mem_size = max_mem_size
         self.batch_size = batch_size
         self.mem_cntr = 0
+
+        self.epsilon_train_buffer = epsilon
 
         self.Q_eval = Deep_QNetwork(lr, input_dims, fc1_dims=256, fc2_dims=256, n_actions=n_actions)
 
@@ -114,13 +118,16 @@ class Agent:
         self.epsilon = self.epsilon - self.eps_dec if self.epsilon > self.eps_min \
             else self.eps_min
 
-    def save(self):
+    def save(self, scores):
+        print("Saving...")
         folderName = os.path.join("savedModels", str(__name__).split(".")[1])
+        print(folderName)
 
         if not os.path.exists(folderName):
-            os.mkdir("savedModels")
+            print("Path:", folderName, "not found, creating...")
             os.mkdir(folderName)
 
+        print("Saving model")
         T.save(self.Q_eval, os.path.join(folderName, "model.pt"))
 
         # This may be a very hacky-way to do this, but I find it the easiest... so
@@ -142,19 +149,24 @@ class Agent:
                              [f"{self.terminal_memory=}".split(".")[1].split("=")[0], self.terminal_memory]]
 
         for item in listOfItemsToSave:
+            print("Saving", item[0])
             with open(os.path.join(folderName, item[0] + ".pickle"), mode="wb") as file:
                 pickle.dump(item[1], file)
+        with open(os.path.join(folderName, "scores.pickle"), mode="wb") as file:
+            pickle.dump(scores, file)
 
-        print("\n\n")
+        print("Model successfully saved")
         return True
 
     def load(self):
+        print("Loading...")
         folderName = os.path.join("savedModels", str(__name__).split(".")[1])
 
         if not os.path.exists(folderName):
             print("Found no existing model to load")
             return False
 
+        print("Loading model")
         self.Q_eval = T.load(os.path.join(folderName, "model.pt"))
 
         listOfItemsToLoad = [f"{self.gamma=}".split(".")[1].split("=")[0],
@@ -178,6 +190,7 @@ class Agent:
                 print("File:", fileName, "does not exist.")
                 return False
 
+            print("Loading", item)
             with open(fileName, mode="rb") as file:
                 value = pickle.load(file)
 
@@ -210,7 +223,15 @@ class Agent:
                 else:
                     self.terminal_memory = value
 
-            return True
+        print("Model successfully loaded")
+        return True
+
+    def evaluationMode(self):
+        self.epsilon_train_buffer = self.epsilon
+        self.epsilon = 0.0
+
+    def trainingMode(self):
+        self.epsilon = self.epsilon_train_buffer
 
 
 # https://deeplizard.com/learn/video/HGeI30uATws/
