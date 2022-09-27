@@ -1,15 +1,20 @@
-from Networks.Deep_QNetwork import Deep_QNetwork
+from Networks.deepNeuralNet import deepNeuralNet
 import torch as T
+from torch.nn.functional import relu
 import numpy as np
 import os
 import pickle
 
 
+# https://www.geeksforgeeks.org/deep-q-learning/
+
 class Agent:
 
     # These are default values, don't take these as final
-    def __init__(self, gamma=0.99, epsilon=1.0, lr=0.001, input_dims=[8], batch_size=64, n_actions=4, max_mem_size=100000, eps_end=0.01,
-                 eps_dec=5e-4):
+    def __init__(self, gamma=0.99, epsilon=1.0, lr=0.001, input_dims=[8], batch_size=64, n_actions=4,
+                 max_mem_size=100000, eps_end=0.01, eps_dec=5e-4, Q_eval=deepNeuralNet, activation_function=relu):
+        self.scores = None
+        self.folderName = os.path.join("savedModels", str(__name__).split(".")[1])
         self.gamma = gamma
         self.epsilon = epsilon
         self.eps_min = eps_end
@@ -22,11 +27,13 @@ class Agent:
 
         self.epsilon_train_buffer = epsilon
 
-        self.Q_eval = Deep_QNetwork(lr, input_dims, fc1_dims=256, fc2_dims=256, n_actions=n_actions)
+        self.activation_function = activation_function
+        self.Q_eval = Q_eval(lr=lr, input_dims=input_dims, fc1_dims=256, fc2_dims=256, n_actions=n_actions, activation_function=activation_function)
+        self.folderName = os.path.join(self.folderName, self.Q_eval.getName())
+        self.folderName = os.path.join(self.folderName, self.activation_function.__name__)
 
         # Memory storage, some people use deque
         # we're using named arrays
-
         self.state_memory = np.zeros((self.mem_size, *input_dims), dtype=np.float32)
         self.new_state_memory = np.zeros((self.mem_size, *input_dims), dtype=np.float32)
         self.action_memory = np.zeros(self.mem_size, dtype=np.int32)
@@ -62,7 +69,12 @@ class Agent:
         if np.random.random() > self.epsilon:
 
             # Take our observation, turn it into a tensor
-            state = T.tensor([observation]).to(self.Q_eval.device)
+            x = np.array([observation])
+            # We do this because of a warning
+            # UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at  ..\torch\csrc\utils\tensor_new.cpp:204.)
+            # state = T.tensor([observation]).to(self.Q_eval.device)
+
+            state = T.tensor(x).to(self.Q_eval.device)
             # Pass the state through our network
             actions = self.Q_eval.forward(state)
             # Get the argmax to return the integer that corresponds to the maximal action for given state
@@ -118,17 +130,20 @@ class Agent:
         self.epsilon = self.epsilon - self.eps_dec if self.epsilon > self.eps_min \
             else self.eps_min
 
-    def save(self, scores):
+    def save(self, scores=[]):
+        self.scores = scores
         print("Saving...")
-        folderName = os.path.join("savedModels", str(__name__).split(".")[1])
-        print(folderName)
-
-        if not os.path.exists(folderName):
-            print("Path:", folderName, "not found, creating...")
-            os.mkdir(folderName)
+        n = ""
+        for each in self.folderName.split("\\"):
+            n = os.path.join(n, each)
+            if not os.path.exists(n):
+                print("\tPath:", n, "not found, creating")
+                os.mkdir(n)
+            else:
+                pass
 
         print("Saving model")
-        T.save(self.Q_eval, os.path.join(folderName, "model.pt"))
+        T.save(self.Q_eval, os.path.join(self.folderName, "model.pt"))
 
         # This may be a very hacky-way to do this, but I find it the easiest... so
         # The idea is that we use the f"{self.variable=}" to get the return name: "self.variable=value"
@@ -149,10 +164,10 @@ class Agent:
                              [f"{self.terminal_memory=}".split(".")[1].split("=")[0], self.terminal_memory]]
 
         for item in listOfItemsToSave:
-            print("Saving", item[0])
-            with open(os.path.join(folderName, item[0] + ".pickle"), mode="wb") as file:
+            print("\tSaving", item[0])
+            with open(os.path.join(self.folderName, item[0] + ".pickle"), mode="wb") as file:
                 pickle.dump(item[1], file)
-        with open(os.path.join(folderName, "scores.pickle"), mode="wb") as file:
+        with open(os.path.join(self.folderName, "scores.pickle"), mode="wb") as file:
             pickle.dump(scores, file)
 
         print("Model successfully saved")
@@ -160,14 +175,13 @@ class Agent:
 
     def load(self):
         print("Loading...")
-        folderName = os.path.join("savedModels", str(__name__).split(".")[1])
 
-        if not os.path.exists(folderName):
+        if not os.path.exists(self.folderName):
             print("Found no existing model to load")
             return False
 
         print("Loading model")
-        self.Q_eval = T.load(os.path.join(folderName, "model.pt"))
+        self.Q_eval = T.load(os.path.join(self.folderName, "model.pt"))
 
         listOfItemsToLoad = [f"{self.gamma=}".split(".")[1].split("=")[0],
                              f"{self.epsilon=}".split(".")[1].split("=")[0],
@@ -185,7 +199,7 @@ class Agent:
                              f"{self.terminal_memory=}".split(".")[1].split("=")[0]]
 
         for item in listOfItemsToLoad:
-            fileName = os.path.join(folderName, item + ".pickle")
+            fileName = os.path.join(self.folderName, item + ".pickle")
             if not os.path.exists(fileName):
                 print("File:", fileName, "does not exist.")
                 return False
@@ -223,6 +237,9 @@ class Agent:
                 else:
                     self.terminal_memory = value
 
+        with open(os.path.join(self.folderName, "scores.pickle"), mode="rb") as file:
+            self.scores = pickle.load(file)
+
         print("Model successfully loaded")
         return True
 
@@ -233,7 +250,8 @@ class Agent:
     def trainingMode(self):
         self.epsilon = self.epsilon_train_buffer
 
-
+    def getScores(self):
+        return self.scores
 # https://deeplizard.com/learn/video/HGeI30uATws/
 # https://www.youtube.com/watch?time_continue=4&v=HGeI30uATws&feature=emb_title/
 # or maybe this: https://www.learndatasci.com/tutorials/reinforcement-q-learning-scratch-python-openai-gym/

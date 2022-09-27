@@ -10,7 +10,7 @@ The **_agent_** contains two components:
   - The algorithm continuously updates the policy parameters based on the **_actions_**, **_observations_**, and **_rewards_**. The goal of the algorithm is to find an optimal policy that maximises the expected cumulative long-term **_reward_** recieved during the task.
 
   
-With the agents I know, (Q_Learning + Deep Q-Network) they are both Value-based **_agents_** with a discreet **_action space_**, however there are more types of **_agents_**, e.g:
+With the agents I know, (Q_Learning + Deep Q-Network) they are both Value-based **_agents_** with a discrete **_action space_**, however there are more types of **_agents_**, [e.g](https://www.mathworks.com/help/reinforcement-learning/ug/create-agents-for-reinforcement-learning.html):
 
 | Agent                                                        | Type         | Action Space           |
 |--------------------------------------------------------------|--------------|------------------------|
@@ -25,5 +25,5 @@ With the agents I know, (Q_Learning + Deep Q-Network) they are both Value-based 
 | Twin-Delayed Deep Deterministic Policy Gradient Agents (TD3) | Actor-Critic | Continuous             |
 | Soft Actor-Critic Agents (SAC)                               | Actor-Critic | Continuous             |
 
-
-[I found these here](https://www.mathworks.com/help/reinforcement-learning/ug/create-agents-for-reinforcement-learning.html)
+Within the **_agent_** there are multiple things that can be changed to min-max an outcome, these are usually called hyper-parameters.
+With my code, two hyper-parameters can be changed, the learning Agent itself and if it permits, the activation function that the learning agent's neural network uses.
