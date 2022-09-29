@@ -1,0 +1,16 @@
+---- TODO ----
+
+- Understand & Implement a Target Network
+- Make use of different hyper-parameters
+- Make use of different Q-values (long-term reward)
+
+
+Finally once this is all done
+- Different environmets (In order)
+  - Atari Breakout
+  - Cartpole
+  - Blackjack
+  - Mountain Car
+  - Atari Pong
+  - Atari Space Invaders
+  - Maybe some MuJoCo envs? (V Difficult)
