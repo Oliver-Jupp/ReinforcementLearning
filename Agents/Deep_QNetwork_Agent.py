@@ -4,10 +4,10 @@ from torch.nn.functional import relu
 import numpy as np
 import os
 import pickle
+from time import perf_counter_ns
 
-
-# https://www.geeksforgeeks.org/deep-q-learning/
-
+# Actually read and process the first answer to the question.
+# https://stackoverflow.com/questions/54237327/why-is-a-target-network-required
 class Agent:
 
     # These are default values, don't take these as final
@@ -41,7 +41,7 @@ class Agent:
         self.terminal_memory = np.zeros(self.mem_size, dtype=bool)
 
     def store_transitions(self, state, action, reward, state_, done):
-
+        start = perf_counter_ns()
         # What is the position of the first unoccupied memory
         # Using the modulus here gives the property that this will wrap around
         # so after 999999 items, then it will start re-writing the stuff from the beginning
@@ -56,10 +56,13 @@ class Agent:
 
         # Memory index has been filled, so we increase
         self.mem_cntr += 1
+        end = perf_counter_ns()
+        print("\tstore_transitions: ", end-start)
 
     # The agent has to have a function so that it can choose an action
     # and that will be based on the observation of the current state of the environment
     def choose_action(self, observation):
+        start = perf_counter_ns()
 
         # So here we're dealing with the exploration|exploitation problem,
         # and we're dealing with it normally. E.g.
@@ -69,12 +72,11 @@ class Agent:
         if np.random.random() > self.epsilon:
 
             # Take our observation, turn it into a tensor
-            x = np.array([observation])
+                # x = np.array([observation])
             # We do this because of a warning
             # UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at  ..\torch\csrc\utils\tensor_new.cpp:204.)
-            # state = T.tensor([observation]).to(self.Q_eval.device)
-
-            state = T.tensor(x).to(self.Q_eval.device)
+            state = T.tensor([observation]).to(self.Q_eval.device)
+                # state = T.tensor(x).to(self.Q_eval.device)
             # Pass the state through our network
             actions = self.Q_eval.forward(state)
             # Get the argmax to return the integer that corresponds to the maximal action for given state
@@ -84,6 +86,8 @@ class Agent:
         else:
             action = np.random.choice(self.action_space)
 
+        end = perf_counter_ns()
+        print("choose_action: ", end-start)
         return action
 
     # We need the agent to learn from its experiences
@@ -94,6 +98,7 @@ class Agent:
     # Simply start learning as soon as you have filled up a batch_size of memory
     # ^ this is what we're doing
     def learn(self):
+        start = perf_counter_ns()
         if self.mem_cntr < self.batch_size:
             return
         # Zeroing the gradient on our optimizer
@@ -130,6 +135,11 @@ class Agent:
         self.epsilon = self.epsilon - self.eps_dec if self.epsilon > self.eps_min \
             else self.eps_min
 
+        end = perf_counter_ns()
+        print("learn: ", end-start)
+
+
+
     def save(self, scores=[]):
         self.scores = scores
         print("Saving...")
@@ -137,7 +147,7 @@ class Agent:
         for each in self.folderName.split("\\"):
             n = os.path.join(n, each)
             if not os.path.exists(n):
-                print("\tPath:", n, "not found, creating")
+                print("Path:", n, "not found, creating")
                 os.mkdir(n)
             else:
                 pass
@@ -252,6 +262,9 @@ class Agent:
 
     def getScores(self):
         return self.scores
+
+    def getFolderName(self):
+        return self.folderName
 # https://deeplizard.com/learn/video/HGeI30uATws/
 # https://www.youtube.com/watch?time_continue=4&v=HGeI30uATws&feature=emb_title/
 # or maybe this: https://www.learndatasci.com/tutorials/reinforcement-q-learning-scratch-python-openai-gym/

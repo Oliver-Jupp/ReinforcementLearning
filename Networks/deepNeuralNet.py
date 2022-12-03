@@ -1,8 +1,10 @@
+import time
+
 import torch as T
 import torch.nn as nn
 from torch.nn.functional import relu
 import torch.optim as optim
-
+from time import perf_counter_ns
 
 class deepNeuralNet(nn.Module):
 
@@ -27,6 +29,7 @@ class deepNeuralNet(nn.Module):
         self.to(self.device)
 
     def forward(self, state):
+        start = perf_counter_ns()
         x = self.activation_function(self.fc1(state))
         x = self.activation_function(self.fc2(x))
         actions = self.fc3(x)
@@ -37,6 +40,8 @@ class deepNeuralNet(nn.Module):
         # could be negative, could also be greater than 1, so sigmoid(??)
         # or a tan hyperbolic(??)
 
+        end = perf_counter_ns()
+        print("\tchoose_action: ", end-start)
         return actions
 
     def getName(self):

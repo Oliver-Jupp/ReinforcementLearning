@@ -1,3 +1,6 @@
+# Deep reinforcement learning bootcamp
+# https://www.youtube.com/playlist?list=PLAdk-EyP1ND8MqJEJnSvaoUShrAWYe51U
+
 import gym
 import numpy as np
 from os import rename, path, system, mkdir
@@ -49,7 +52,7 @@ def recordFullLearning(agent, environment, recordingFolder, numberOfGames, perce
             new = path.join(recordingFolder, "metaFiles")
             if not path.exists(new):
                 mkdir(new)
-            print("Moving meta file:")
+            print("\tMoving meta file:")
             system("move {} {}".format(old, new))
 
     print("Saving model")
@@ -97,12 +100,25 @@ def learn(agent, environment, numberOfGames):
 activationFunctions = [relu, leaky_relu, sigmoid, tanh, softmax]
 activationFunctionsScores = []
 environment = gym.make("LunarLander-v2", new_step_api=True)
-recordingFolder = "C:\\Users\\olive\\Downloads\\ReinforcementLearningVideos"
 numberOfGames = 2000
 percentRecording = 0.01
 
+functionTimings = []
+import time
+
+
+
 for func in activationFunctions:
+    start = time.time()
     agent = Agent(gamma=0.99, epsilon=1.0, batch_size=64, n_actions=4, eps_end=0.01, input_dims=[8], lr=0.001,
                   Q_eval=deepNeuralNet, activation_function=func)
+    recordingFolder = path.join(agent.getFolderName(), "videos")
     scores = recordFullLearning(agent, environment, recordingFolder, numberOfGames, percentRecording)
     activationFunctionsScores.append(scores)
+    end = time.time()
+    functionTimings.append((end-start))
+
+
+print("\n\nDONE\nTimings:")
+for index,each in enumerate(functionTimings):
+    print(index, "\t", each)
